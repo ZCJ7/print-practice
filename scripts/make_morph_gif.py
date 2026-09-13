@@ -41,8 +41,8 @@ def hash01(n):
 WEAR_MAX = 0.72
 WEAR_TAU_MIN = 28
 EXP_HOURS = 8
-RECOVER_BASE = 16
-RECOVER_MIN = 3
+RECOVER_DAYS_BASE = 5
+RECOVER_DAYS_MIN = 0.5
 CALLUS_TAU_H = 10
 
 
@@ -50,8 +50,8 @@ def wear_scale(total_ms):
     return 1 / (1 + (total_ms / 3600000) / EXP_HOURS)
 
 
-def recover_hours(total_ms):
-    return max(RECOVER_MIN, RECOVER_BASE * wear_scale(total_ms))
+def recover_days(total_ms):
+    return max(RECOVER_DAYS_MIN, RECOVER_DAYS_BASE * wear_scale(total_ms))
 
 
 def session_wear(minutes, total_ms=0):
@@ -217,14 +217,14 @@ def sample(p):
         r = (p - 0.36) / 0.3
         after = 40 * 60000
         start = session_wear(40, 0)
-        need = recover_hours(after)
-        hours = r * need
+        need = recover_days(after)
+        days = r * need
         return (
-            clamp(start - hours / need, 0, 1),
+            clamp(start - days / need, 0, 1),
             callus_from_total(after),
             "休息恢复",
-            "%d / %d 小时" % (round(hours), round(need)),
-            "累计越长，退完磨损所需时间越短",
+            "%.1f / %.1f 天" % (days, need),
+            "按天恢复：新手约 5 天，老手至少半天",
         )
     c = (p - 0.66) / 0.34
     total_hours = 0.7 + c * 19.3

@@ -9,8 +9,8 @@
   var WEAR_MAX = 0.72;
   var WEAR_TAU_MIN = 28;
   var EXP_HOURS = 8;
-  var RECOVER_BASE = 16;
-  var RECOVER_MIN = 3;
+  var RECOVER_DAYS_BASE = 5;
+  var RECOVER_DAYS_MIN = 0.5;
   var CALLUS_TAU_H = 10;
   var MAX_SNAPS = 10;
 
@@ -134,8 +134,8 @@
     return 1 / (1 + (totalMs / 3600000) / EXP_HOURS);
   }
 
-  function recoverHours(totalMs) {
-    return Math.max(RECOVER_MIN, RECOVER_BASE * wearScale(totalMs));
+  function recoverDays(totalMs) {
+    return Math.max(RECOVER_DAYS_MIN, RECOVER_DAYS_BASE * wearScale(totalMs));
   }
 
   function sessionWear(minutes, totalMs) {
@@ -153,18 +153,18 @@
     if (state.session) return;
     var hours = (now - state.lastEndAt) / 3600000;
     if (hours <= 0) return;
-    state.wear = clamp(state.wear - hours / recoverHours(state.totalMs), 0, 1);
+    state.wear = clamp(state.wear - hours / (recoverDays(state.totalMs) * 24), 0, 1);
     state.lastEndAt = now;
   }
 
   function currentVisual(now) {
     var extra = 0;
     if (state.session && state.session.startAt) {
-      extra = capMs(now - state.session.startAt);
+      extra = Math.max(0, now - state.session.startAt);
     }
     var wear = state.wear;
     if (extra > 0) {
-      wear = clamp(wear + sessionWear(extra / 60000, state.totalMs), 0, 1);
+      wear = clamp(wear + sessionWear(capMs(extra) / 60000, state.totalMs), 0, 1);
     }
     return {
       wear: wear,
@@ -478,12 +478,12 @@
       return;
     }
     var now = Date.now();
-    var duration = capMs(now - state.session.startAt);
+    var duration = Math.max(0, now - state.session.startAt);
     stopTimerClock();
     timerEl.textContent = formatTime(duration);
 
     if (duration >= MIN_SESSION_MS) {
-      state.wear = clamp(state.wear + sessionWear(duration / 60000, state.totalMs), 0, 1);
+      state.wear = clamp(state.wear + sessionWear(capMs(duration) / 60000, state.totalMs), 0, 1);
       state.totalMs += duration;
       state.callus = callusFromTotal(state.totalMs);
       pushSnap(state.wear, state.callus);

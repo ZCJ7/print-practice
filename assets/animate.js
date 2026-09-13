@@ -35,7 +35,7 @@
         callus: api.callusFromTotal(40 * 60000),
         phase: "练习结束",
         clock: "00:40",
-        sub: "单次最多记 2 小时，茧按累计时长",
+        sub: "磨损最多按 2 小时算，累计超时继续记",
         bar: 1
       };
     }
@@ -43,14 +43,14 @@
       var r = (p - 0.36) / 0.3;
       var after = 40 * 60000;
       var startWear = api.sessionWear(40, 0);
-      var need = api.recoverHours(after);
-      var hours = r * need;
+      var need = api.recoverDays(after);
+      var days = r * need;
       return {
-        wear: api.clamp(startWear - hours / need, 0, 1),
+        wear: api.clamp(startWear - days / need, 0, 1),
         callus: api.callusFromTotal(after),
         phase: "休息恢复",
-        clock: Math.round(hours) + " / " + Math.round(need) + " 小时",
-        sub: "累计越长，退完磨损所需时间越短",
+        clock: days.toFixed(1) + " / " + need.toFixed(1) + " 天",
+        sub: "按天恢复：新手约 5 天，老手至少半天",
         bar: r
       };
     }

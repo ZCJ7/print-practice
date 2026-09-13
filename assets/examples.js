@@ -149,8 +149,8 @@
   var WEAR_MAX = 0.72;
   var WEAR_TAU_MIN = 28;
   var EXP_HOURS = 8;
-  var RECOVER_BASE = 16;
-  var RECOVER_MIN = 3;
+  var RECOVER_DAYS_BASE = 5;
+  var RECOVER_DAYS_MIN = 0.5;
   var CALLUS_TAU_H = 10;
 
   function capMinutes(minutes) {
@@ -161,8 +161,8 @@
     return 1 / (1 + (totalMs / 3600000) / EXP_HOURS);
   }
 
-  function recoverHours(totalMs) {
-    return Math.max(RECOVER_MIN, RECOVER_BASE * wearScale(totalMs));
+  function recoverDays(totalMs) {
+    return Math.max(RECOVER_DAYS_MIN, RECOVER_DAYS_BASE * wearScale(totalMs));
   }
 
   function sessionWear(minutes, totalMs) {
@@ -258,7 +258,7 @@
   var sections = [
     {
       title: "新手一次练习，不同时长",
-      note: "累计为 0。单次最多记 2 小时；磨损随本次时长递增，但越往后增量越小。",
+      note: "累计为 0。单次磨损最多按 2 小时算；超过 2 小时累计仍继续记。",
       items: [
         { label: "未练习", sub: "初始", totalHours: 0, minutes: 0, rest: 0 },
         { label: "15 分钟", sub: "轻磨损", totalHours: 0, minutes: 15, rest: 0 },
@@ -279,22 +279,22 @@
     },
     {
       title: "练完 20 分钟后，不同间隔",
-      note: "新手恢复大约要 16 小时退完；累计越长，同样磨损退得越快。",
+      note: "磨损按天恢复：新手大约 5 天退完，老手至少半天。累计越长，退得越快。",
       items: [
-        { label: "刚结束", sub: "间隔 0 小时", totalHours: 0, minutes: 20, rest: 0 },
-        { label: "休息 4 小时", sub: "退了一部分", totalHours: 0, minutes: 20, rest: 4 },
-        { label: "休息 8 小时", sub: "还剩一点", totalHours: 0, minutes: 20, rest: 8 },
-        { label: "休息 16 小时", sub: "新手刚好退完", totalHours: 0, minutes: 20, rest: 16 }
+        { label: "刚结束", sub: "间隔 0 天", totalHours: 0, minutes: 20, restDays: 0 },
+        { label: "休息 1 天", sub: "新手退一部分", totalHours: 0, minutes: 20, restDays: 1 },
+        { label: "休息 2.5 天", sub: "大约一半", totalHours: 0, minutes: 20, restDays: 2.5 },
+        { label: "休息 5 天", sub: "新手刚好退完", totalHours: 0, minutes: 20, restDays: 5 }
       ]
     },
     {
       title: "茧层只看累计时长",
       note: "和练了几次无关。1 小时一次，或 6 次十分钟，累计相同则茧相同。这里都已休息够。",
       items: [
-        { label: "累计 0.5 小时", sub: "初茧", totalHours: 0.5, minutes: 0, rest: 24 },
-        { label: "累计 2 小时", sub: "茧层可见", totalHours: 2, minutes: 0, rest: 24 },
-        { label: "累计 8 小时", sub: "厚茧", totalHours: 8, minutes: 0, rest: 24 },
-        { label: "累计 20 小时", sub: "稳定老茧", totalHours: 20, minutes: 0, rest: 24 }
+        { label: "累计 0.5 小时", sub: "初茧", totalHours: 0.5, minutes: 0, restDays: 10 },
+        { label: "累计 2 小时", sub: "茧层可见", totalHours: 2, minutes: 0, restDays: 10 },
+        { label: "累计 8 小时", sub: "厚茧", totalHours: 8, minutes: 0, restDays: 10 },
+        { label: "累计 20 小时", sub: "稳定老茧", totalHours: 20, minutes: 0, restDays: 10 }
       ]
     }
   ];
@@ -304,9 +304,9 @@
     var added = capMinutes(item.minutes || 0) * 60000;
     var after = before + added;
     var wear = sessionWear(item.minutes || 0, before);
-    var restH = item.rest || 0;
-    if (restH > 0) {
-      wear = clamp(wear - restH / recoverHours(after), 0, 1);
+    var restDays = item.restDays != null ? item.restDays : (item.rest || 0) / 24;
+    if (restDays > 0) {
+      wear = clamp(wear - restDays / recoverDays(after), 0, 1);
     }
     return {
       wear: wear,
@@ -360,7 +360,7 @@
     drawPrint: drawPrint,
     sessionWear: sessionWear,
     callusFromTotal: callusFromTotal,
-    recoverHours: recoverHours,
+    recoverDays: recoverDays,
     clamp: clamp
   };
 })();
