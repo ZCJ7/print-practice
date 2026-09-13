@@ -38,16 +38,32 @@ def hash01(n):
     return x - math.floor(x)
 
 
-def session_wear(minutes):
-    if minutes <= 0:
-        return 0.0
-    return clamp(0.08 + minutes * 0.045, 0, 0.62)
+WEAR_MAX = 0.72
+WEAR_TAU_MIN = 28
+EXP_HOURS = 8
+RECOVER_BASE = 16
+RECOVER_MIN = 3
+CALLUS_TAU_H = 10
 
 
-def session_callus(minutes):
+def wear_scale(total_ms):
+    return 1 / (1 + (total_ms / 3600000) / EXP_HOURS)
+
+
+def recover_hours(total_ms):
+    return max(RECOVER_MIN, RECOVER_BASE * wear_scale(total_ms))
+
+
+def session_wear(minutes, total_ms=0):
+    minutes = clamp(minutes, 0, 120)
     if minutes <= 0:
         return 0.0
-    return clamp(minutes * 0.014, 0, 0.12)
+    raw = WEAR_MAX * (1 - math.exp(-minutes / WEAR_TAU_MIN))
+    return raw * wear_scale(total_ms)
+
+
+def callus_from_total(total_ms):
+    return clamp(1 - math.exp(-(total_ms / 3600000) / CALLUS_TAU_H), 0, 1)
 
 
 def inside_pad(x, y):
@@ -179,22 +195,46 @@ def draw_print(wear, callus):
 
 
 def sample(p):
-    if p < 0.32:
-        u = p / 0.32
-        minutes = u * 12
-        return session_wear(minutes), session_callus(minutes), "一次练习", "00:%02d" % round(minutes), "磨损和初茧一起长出来"
-    if p < 0.38:
-        return session_wear(12), session_callus(12), "练习结束", "00:12", "单次磨损到顶，开始休息"
-    if p < 0.72:
-        r = (p - 0.38) / 0.34
-        hours = r * 16
-        wear = clamp(session_wear(12) - hours / 16, 0, 1)
-        return wear, session_callus(12), "休息恢复", "%d 小时" % round(hours), "磨损按真实时间消退，茧还在"
-    if p < 0.78:
-        return 0.0, session_callus(12), "休息 16 小时", "16 小时", "磨损退完，只留下一层茧"
-    c = (p - 0.78) / 0.22
-    times = 1 + c * 7
-    return 0.0, clamp(session_callus(12) * times, 0, 1), "多次练习", "第 %d 次" % max(1, round(times)), "每次都休息够，茧层越来越厚"
+    if p < 0.3:
+        u = p / 0.3
+        minutes = u * 40
+        return (
+            session_wear(minutes, 0),
+            callus_from_total(minutes * 60000),
+            "新手一次练习",
+            "00:%02d" % round(minutes),
+            "累计还少，这次磨得比较明显",
+        )
+    if p < 0.36:
+        return (
+            session_wear(40, 0),
+            callus_from_total(40 * 60000),
+            "练习结束",
+            "00:40",
+            "单次最多记 2 小时，茧按累计时长",
+        )
+    if p < 0.66:
+        r = (p - 0.36) / 0.3
+        after = 40 * 60000
+        start = session_wear(40, 0)
+        need = recover_hours(after)
+        hours = r * need
+        return (
+            clamp(start - hours / need, 0, 1),
+            callus_from_total(after),
+            "休息恢复",
+            "%d / %d 小时" % (round(hours), round(need)),
+            "累计越长，退完磨损所需时间越短",
+        )
+    c = (p - 0.66) / 0.34
+    total_hours = 0.7 + c * 19.3
+    return (
+        0.0,
+        callus_from_total(total_hours * 3600000),
+        "茧层随累计变厚",
+        "%.1f 小时" % total_hours,
+        "不看次数，只看一共练了多久",
+    )
 
 
 def font(size):

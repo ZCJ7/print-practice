@@ -145,14 +145,35 @@
     return list;
   }
 
-  function sessionWear(minutes) {
-    if (minutes <= 0) return 0;
-    return clamp(0.08 + minutes * 0.045, 0, 0.62);
+  var SESSION_CAP_MIN = 120;
+  var WEAR_MAX = 0.72;
+  var WEAR_TAU_MIN = 28;
+  var EXP_HOURS = 8;
+  var RECOVER_BASE = 16;
+  var RECOVER_MIN = 3;
+  var CALLUS_TAU_H = 10;
+
+  function capMinutes(minutes) {
+    return clamp(minutes, 0, SESSION_CAP_MIN);
   }
 
-  function sessionCallus(minutes) {
+  function wearScale(totalMs) {
+    return 1 / (1 + (totalMs / 3600000) / EXP_HOURS);
+  }
+
+  function recoverHours(totalMs) {
+    return Math.max(RECOVER_MIN, RECOVER_BASE * wearScale(totalMs));
+  }
+
+  function sessionWear(minutes, totalMs) {
+    minutes = capMinutes(minutes);
     if (minutes <= 0) return 0;
-    return clamp(minutes * 0.014, 0, 0.12);
+    var raw = WEAR_MAX * (1 - Math.exp(-minutes / WEAR_TAU_MIN));
+    return raw * wearScale(totalMs || 0);
+  }
+
+  function callusFromTotal(totalMs) {
+    return clamp(1 - Math.exp(-(totalMs / 3600000) / CALLUS_TAU_H), 0, 1);
   }
 
   function drawPrint(target, width, height, visual) {
@@ -236,53 +257,61 @@
 
   var sections = [
     {
-      title: "一次练习，不同时长",
-      note: "都是刚结束、还没休息。单次磨损大约 12 分钟封顶，茧层大约 9 分钟封顶，再练更久外观几乎不再变，要靠多次练习长茧。",
+      title: "新手一次练习，不同时长",
+      note: "累计为 0。单次最多记 2 小时；磨损随本次时长递增，但越往后增量越小。",
       items: [
-        { label: "未练习", sub: "初始", minutes: 0, rest: 0, times: 1 },
-        { label: "3 分钟", sub: "轻磨损", minutes: 3, rest: 0, times: 1 },
-        { label: "6 分钟", sub: "明显磨损", minutes: 6, rest: 0, times: 1 },
-        { label: "10 分钟", sub: "接近单次上限", minutes: 10, rest: 0, times: 1 },
-        { label: "20 分钟", sub: "与 10 分钟几乎同形", minutes: 20, rest: 0, times: 1 }
+        { label: "未练习", sub: "初始", totalHours: 0, minutes: 0, rest: 0 },
+        { label: "15 分钟", sub: "轻磨损", totalHours: 0, minutes: 15, rest: 0 },
+        { label: "40 分钟", sub: "明显磨损", totalHours: 0, minutes: 40, rest: 0 },
+        { label: "90 分钟", sub: "接近单次上限", totalHours: 0, minutes: 90, rest: 0 },
+        { label: "2 小时", sub: "单次封顶", totalHours: 0, minutes: 120, rest: 0 }
       ]
     },
     {
-      title: "练完 10 分钟后，不同间隔",
-      note: "磨损大约 16 小时消退完；茧层不会因休息消失，只会留下一层更暖、更粗的外围。",
+      title: "同一段 20 分钟，累计不同",
+      note: "累计越长，同样练 20 分钟磨损越少。右边已经休息够，只看这次留下的磨。",
       items: [
-        { label: "刚结束", sub: "间隔 0 小时", minutes: 10, rest: 0, times: 1 },
-        { label: "休息 4 小时", sub: "磨损回一半", minutes: 10, rest: 4, times: 1 },
-        { label: "休息 8 小时", sub: "磨损将尽", minutes: 10, rest: 8, times: 1 },
-        { label: "休息 16 小时", sub: "磨损消失，茧还在", minutes: 10, rest: 16, times: 1 },
-        { label: "休息 24 小时", sub: "与 16 小时相同", minutes: 10, rest: 24, times: 1 }
+        { label: "累计 0 小时", sub: "新手，磨得多", totalHours: 0, minutes: 20, rest: 0 },
+        { label: "累计 5 小时", sub: "磨损减弱", totalHours: 5, minutes: 20, rest: 0 },
+        { label: "累计 15 小时", sub: "更耐磨", totalHours: 15, minutes: 20, rest: 0 },
+        { label: "累计 30 小时", sub: "几乎不太磨", totalHours: 30, minutes: 20, rest: 0 }
       ]
     },
     {
-      title: "多次练习后的茧层",
-      note: "每次练 10 分钟，并且中间都休息满 16 小时。磨损已恢复，只看长期茧层。",
+      title: "练完 20 分钟后，不同间隔",
+      note: "新手恢复大约要 16 小时退完；累计越长，同样磨损退得越快。",
       items: [
-        { label: "1 次", sub: "初茧", minutes: 10, rest: 16, times: 1 },
-        { label: "3 次", sub: "茧层可见", minutes: 10, rest: 16, times: 3 },
-        { label: "5 次", sub: "厚茧", minutes: 10, rest: 16, times: 5 },
-        { label: "8 次", sub: "稳定老茧", minutes: 10, rest: 16, times: 8 }
+        { label: "刚结束", sub: "间隔 0 小时", totalHours: 0, minutes: 20, rest: 0 },
+        { label: "休息 4 小时", sub: "退了一部分", totalHours: 0, minutes: 20, rest: 4 },
+        { label: "休息 8 小时", sub: "还剩一点", totalHours: 0, minutes: 20, rest: 8 },
+        { label: "休息 16 小时", sub: "新手刚好退完", totalHours: 0, minutes: 20, rest: 16 }
+      ]
+    },
+    {
+      title: "茧层只看累计时长",
+      note: "和练了几次无关。1 小时一次，或 6 次十分钟，累计相同则茧相同。这里都已休息够。",
+      items: [
+        { label: "累计 0.5 小时", sub: "初茧", totalHours: 0.5, minutes: 0, rest: 24 },
+        { label: "累计 2 小时", sub: "茧层可见", totalHours: 2, minutes: 0, rest: 24 },
+        { label: "累计 8 小时", sub: "厚茧", totalHours: 8, minutes: 0, rest: 24 },
+        { label: "累计 20 小时", sub: "稳定老茧", totalHours: 20, minutes: 0, rest: 24 }
       ]
     }
   ];
 
   function visualOf(item) {
-    var wear = 0;
-    var callus = 0;
-    var t;
-    for (t = 0; t < item.times; t++) {
-      wear = clamp(wear + sessionWear(item.minutes), 0, 1);
-      callus = clamp(callus + sessionCallus(item.minutes), 0, 1);
-      if (t < item.times - 1) {
-        wear = clamp(wear - 16 / 16, 0, 1);
-      } else {
-        wear = clamp(wear - item.rest / 16, 0, 1);
-      }
+    var before = (item.totalHours || 0) * 3600000;
+    var added = capMinutes(item.minutes || 0) * 60000;
+    var after = before + added;
+    var wear = sessionWear(item.minutes || 0, before);
+    var restH = item.rest || 0;
+    if (restH > 0) {
+      wear = clamp(wear - restH / recoverHours(after), 0, 1);
     }
-    return { wear: wear, callus: callus };
+    return {
+      wear: wear,
+      callus: callusFromTotal(after)
+    };
   }
 
   function render() {
@@ -330,7 +359,8 @@
   window.PrintDraw = {
     drawPrint: drawPrint,
     sessionWear: sessionWear,
-    sessionCallus: sessionCallus,
+    callusFromTotal: callusFromTotal,
+    recoverHours: recoverHours,
     clamp: clamp
   };
 })();

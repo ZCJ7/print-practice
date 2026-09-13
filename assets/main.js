@@ -1,10 +1,17 @@
 (function () {
   "use strict";
 
-  var STORAGE_KEY = "print.fingerprint.v1";
+  var STORAGE_KEY = "print.fingerprint.v2";
   var HOLD_MS = 560;
   var MIN_SESSION_MS = 3000;
-  var RECOVER_HOURS = 16;
+  var SESSION_CAP_MS = 2 * 60 * 60 * 1000;
+  var SESSION_CAP_MIN = 120;
+  var WEAR_MAX = 0.72;
+  var WEAR_TAU_MIN = 28;
+  var EXP_HOURS = 8;
+  var RECOVER_BASE = 16;
+  var RECOVER_MIN = 3;
+  var CALLUS_TAU_H = 10;
   var MAX_SNAPS = 10;
 
   var RIDGE = "#4a4742";
@@ -99,6 +106,7 @@
         if (parsed.snaps && parsed.snaps.length) {
           base.snaps = parsed.snaps.slice(-MAX_SNAPS);
         }
+        base.callus = callusFromTotal(base.totalMs);
       }
       return base;
     } catch (err) {
@@ -112,33 +120,56 @@
     } catch (err) {}
   }
 
+  function capMs(ms) {
+    if (ms < 0) return 0;
+    if (ms > SESSION_CAP_MS) return SESSION_CAP_MS;
+    return ms;
+  }
+
+  function capMinutes(minutes) {
+    return clamp(minutes, 0, SESSION_CAP_MIN);
+  }
+
+  function wearScale(totalMs) {
+    return 1 / (1 + (totalMs / 3600000) / EXP_HOURS);
+  }
+
+  function recoverHours(totalMs) {
+    return Math.max(RECOVER_MIN, RECOVER_BASE * wearScale(totalMs));
+  }
+
+  function sessionWear(minutes, totalMs) {
+    minutes = capMinutes(minutes);
+    if (minutes <= 0) return 0;
+    var raw = WEAR_MAX * (1 - Math.exp(-minutes / WEAR_TAU_MIN));
+    return raw * wearScale(totalMs || 0);
+  }
+
+  function callusFromTotal(totalMs) {
+    return clamp(1 - Math.exp(-(totalMs / 3600000) / CALLUS_TAU_H), 0, 1);
+  }
+
   function applyRecovery(now) {
     if (state.session) return;
     var hours = (now - state.lastEndAt) / 3600000;
     if (hours <= 0) return;
-    state.wear = clamp(state.wear - hours / RECOVER_HOURS, 0, 1);
+    state.wear = clamp(state.wear - hours / recoverHours(state.totalMs), 0, 1);
     state.lastEndAt = now;
   }
 
   function currentVisual(now) {
-    var wear = state.wear;
-    var callus = state.callus;
+    var extra = 0;
     if (state.session && state.session.startAt) {
-      var minutes = (now - state.session.startAt) / 60000;
-      wear = clamp(wear + sessionWear(minutes), 0, 1);
-      callus = clamp(callus + sessionCallus(minutes), 0, 1);
+      extra = capMs(now - state.session.startAt);
     }
-    return { wear: wear, callus: callus };
-  }
-
-  function sessionWear(minutes) {
-    if (minutes <= 0) return 0;
-    return clamp(0.08 + minutes * 0.045, 0, 0.62);
-  }
-
-  function sessionCallus(minutes) {
-    if (minutes <= 0) return 0;
-    return clamp(minutes * 0.014, 0, 0.12);
+    var wear = state.wear;
+    if (extra > 0) {
+      wear = clamp(wear + sessionWear(extra / 60000, state.totalMs), 0, 1);
+    }
+    return {
+      wear: wear,
+      callus: callusFromTotal(state.totalMs + extra)
+    };
   }
 
   function pushSnap(wear, callus) {
@@ -447,15 +478,14 @@
       return;
     }
     var now = Date.now();
-    var duration = now - state.session.startAt;
+    var duration = capMs(now - state.session.startAt);
     stopTimerClock();
     timerEl.textContent = formatTime(duration);
 
     if (duration >= MIN_SESSION_MS) {
-      var minutes = duration / 60000;
-      state.wear = clamp(state.wear + sessionWear(minutes), 0, 1);
-      state.callus = clamp(state.callus + sessionCallus(minutes), 0, 1);
+      state.wear = clamp(state.wear + sessionWear(duration / 60000, state.totalMs), 0, 1);
       state.totalMs += duration;
+      state.callus = callusFromTotal(state.totalMs);
       pushSnap(state.wear, state.callus);
     }
 
@@ -562,11 +592,11 @@
     if (!guideRow.childNodes.length) {
       var steps = [
         { label: "初始", wear: 0, callus: 0 },
-        { label: "练习后", wear: 0.42, callus: 0.04 },
-        { label: "休息后", wear: 0.08, callus: 0.04 },
-        { label: "初茧", wear: 0.12, callus: 0.38 },
-        { label: "再练习", wear: 0.55, callus: 0.48 },
-        { label: "老茧", wear: 0.06, callus: 0.86 }
+        { label: "新手练后", wear: 0.42, callus: 0.08 },
+        { label: "休息后", wear: 0.06, callus: 0.08 },
+        { label: "累计变茧", wear: 0.04, callus: 0.4 },
+        { label: "熟手再练", wear: 0.18, callus: 0.55 },
+        { label: "老茧", wear: 0.04, callus: 0.88 }
       ];
       var i;
       for (i = 0; i < steps.length; i++) {
