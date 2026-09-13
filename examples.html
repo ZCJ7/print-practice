@@ -19,6 +19,14 @@
     .lead { margin-top: 10px; line-height: 1.7; color: #6f6a62; font-size: 14px; }
     .links { margin-top: 16px; }
     .links a { color: #6f6a62; margin-right: 18px; }
+    .morph {
+      display: block;
+      width: 100%;
+      max-width: 360px;
+      margin: 20px auto 0;
+      border-radius: 18px;
+      background: #fffdf8;
+    }
     .section { max-width: 980px; margin: 0 auto 36px; }
     h2 { font-size: 17px; letter-spacing: 0.04em; }
     .note { margin-top: 8px; font-size: 13px; line-height: 1.7; color: #8a8378; }
@@ -46,10 +54,12 @@
   <div class="top">
     <p class="brand">Print</p>
     <h1>指纹变化示例</h1>
-    <p class="lead">下面三组都是用小工具里同一套成长算法画出来的：单次练习看磨损，休息看恢复，多次练习看茧层。</p>
+    <p class="lead">下面三组都是用小工具里同一套成长算法画出来的：单次练习看磨损，休息看恢复，多次练习看茧层。想看连续变化，打开渐变动画。</p>
     <p class="links">
       <a href="./index.html">打开练习页</a>
+      <a href="./animate.html">渐变动画</a>
     </p>
+    <img class="morph" src="./examples/print-morph.gif" alt="指纹从练习到休息再到长茧的循环变化" />
   </div>
   <div id="gallery"></div>
   <script src="./assets/examples.js"></script>

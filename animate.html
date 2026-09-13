@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Print 指纹渐变说明</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f4efe6;
+      color: #2f2c28;
+      min-height: 100vh;
+      padding: 22px 16px 40px;
+    }
+    .wrap { max-width: 420px; margin: 0 auto; text-align: center; }
+    .brand { letter-spacing: 0.18em; color: #8d877c; font-size: 14px; }
+    h1 { margin-top: 8px; font-size: 22px; }
+    .lead { margin-top: 10px; font-size: 13px; line-height: 1.7; color: #6f6a62; text-align: left; }
+    .stage {
+      margin: 22px auto 0;
+      width: 78vmin;
+      max-width: 360px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fffdf8;
+      border-radius: 20px;
+    }
+    .phase { margin-top: 18px; font-size: 15px; letter-spacing: 0.06em; }
+    .clock { margin-top: 6px; font-size: 28px; font-weight: 300; letter-spacing: 0.06em; }
+    .sub { margin-top: 6px; font-size: 13px; color: #8a8378; }
+    .bar {
+      margin: 16px auto 0;
+      width: 70%;
+      height: 3px;
+      background: #ddd6c8;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: #8a8378;
+    }
+    .formula {
+      margin-top: 28px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #6f6a62;
+    }
+    .formula strong { color: #2f2c28; }
+    .links { margin-top: 20px; }
+    .links a { color: #6f6a62; margin-right: 16px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="brand">Print</p>
+    <h1>指纹怎么变</h1>
+    <p class="lead">一段循环：先看一次练习里磨损长出来，再看休息时磨损退回去，最后看多次练习后茧层留下来。</p>
+    <div class="stage">
+      <canvas id="animCanvas" width="720" height="720"></canvas>
+    </div>
+    <p class="phase" id="phase">练习中</p>
+    <p class="clock" id="clock">00:00</p>
+    <p class="sub" id="sub">纹路开始磨损</p>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="formula">
+      <p><strong>休息间隔怎么算</strong></p>
+      <p>不是看你练了多久，而是看「上次点结束」到现在过了多少真实时间。</p>
+      <p>公式：剩余磨损 = 结束时磨损 − 已休息小时数 ÷ 16</p>
+      <p>磨损 16 小时线性退完，退到 0 就不再变。茧层不会因休息消失。关页面也算，因为用的是结束时记下的时间。</p>
+    </div>
+    <p class="links">
+      <a href="./index.html">练习页</a>
+      <a href="./examples.html">静态对照</a>
+    </p>
+  </div>
+  <script src="./assets/examples.js"></script>
+  <script src="./assets/animate.js"></script>
+</body>
+</html>

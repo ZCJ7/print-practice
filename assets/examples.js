@@ -323,5 +323,14 @@
     }
   }
 
-  render();
+  if (document.getElementById("gallery")) {
+    render();
+  }
+
+  window.PrintDraw = {
+    drawPrint: drawPrint,
+    sessionWear: sessionWear,
+    sessionCallus: sessionCallus,
+    clamp: clamp
+  };
 })();
