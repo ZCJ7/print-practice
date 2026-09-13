@@ -1,0 +1,8 @@
+.DS_Store
+_prd_media/
+_prd_extract.txt
+_screen*.png
+_dom.html
+_preview*.png
+_p*.png
+__pycache__/

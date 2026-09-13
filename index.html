@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Print</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                   "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
+  <link rel="stylesheet" href="./assets/style.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="top" id="topBar">
+      <p class="brand" id="brand">Print</p>
+      <button type="button" class="ghost-btn" id="infoBtn" aria-label="说明">i</button>
+    </header>
+
+    <div class="status" id="status" hidden>
+      <p class="status-label" id="statusLabel">练习中</p>
+      <p class="timer" id="timer">00:00:00</p>
+    </div>
+
+    <div class="print-stage" id="printStage">
+      <div class="print-hit" id="printHit" role="button" aria-label="长按指纹开始或结束练习">
+        <canvas id="printCanvas"></canvas>
+        <div class="glow" id="glow"></div>
+      </div>
+    </div>
+
+    <p class="hint" id="hint">长按指纹，开始练习</p>
+
+    <div class="bottom" id="bottomBar">
+      <button type="button" class="circle-btn" id="closeBtn" hidden aria-label="结束练习">
+        <span class="icon-x"></span>
+      </button>
+      <button type="button" class="circle-btn is-done" id="doneBtn" hidden aria-label="回到首页">
+        <span class="icon-check"></span>
+      </button>
+    </div>
+
+    <button type="button" class="sheet-handle" id="sheetHandle" aria-label="查看留下的痕迹">
+      <span class="handle-bar"></span>
+    </button>
+  </div>
+
+  <div class="overlay" id="sheet" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <span class="handle-bar"></span>
+        <h2 class="sheet-title">留下的痕迹</h2>
+        <p class="sheet-sub">只保留指纹的样子，不记时长</p>
+      </div>
+      <div class="snap-row" id="snapRow"></div>
+      <button type="button" class="text-btn" id="sheetClose">收起</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="infoModal" hidden>
+    <div class="modal">
+      <h2 class="modal-title">用一枚指纹，记下练习</h2>
+      <p class="modal-copy">长按指纹开始，再长按一次结束。纹路会磨损，休息后慢慢恢复；练久了，外围会长出茧层。</p>
+      <div class="guide-row" id="guideRow"></div>
+      <button type="button" class="text-btn" id="infoClose">知道了</button>
+    </div>
+  </div>
+
+  <script src="./assets/main.js"></script>
+</body>
+</html>
