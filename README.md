@@ -2,5 +2,6 @@
 
 用一枚指纹记录练琴。长按开始，再长按结束。
 
-- 练习页：打开仓库的 GitHub Pages 首页
-- 指纹变化示例：`examples.html`
+- 手机练习页：https://zcj7.github.io/print-practice/
+- 指纹变化示例：https://zcj7.github.io/print-practice/examples.html
+- 仓库：https://github.com/ZCJ7/print-practice
