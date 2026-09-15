@@ -104,13 +104,13 @@ body {
 }
 
 .status {
-  position: absolute;
-  top: 72px;
-  top: calc(72px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
-  left: 0;
-  right: 0;
-  text-align: center;
+  position: relative;
   z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 4px;
+  text-align: center;
 }
 
 .status-label {
@@ -139,6 +139,11 @@ body {
   min-width: 0;
 }
 
+.app.is-session .print-stage {
+  align-items: center;
+  padding-top: 8px;
+}
+
 .print-hit {
   position: relative;
   width: 82vmin;
@@ -148,6 +153,12 @@ body {
   border: 0;
   background: transparent;
   touch-action: none;
+}
+
+.app.is-session .print-hit {
+  width: 68vmin;
+  height: 68vmin;
+  max-height: 58%;
 }
 
 .app:not(.is-session) .print-hit {
@@ -433,6 +444,12 @@ body {
     height: 420px;
     max-width: 70%;
     max-height: 62%;
+  }
+
+  .app.is-session .print-hit {
+    width: 360px;
+    height: 360px;
+    max-height: 52%;
   }
 }
 
