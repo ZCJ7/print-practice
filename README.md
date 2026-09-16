@@ -6,3 +6,4 @@
 - 渐变动画：https://zcj7.github.io/print-practice/animate.html
 - 指纹变化示例：https://zcj7.github.io/print-practice/examples.html
 - 仓库：https://github.com/ZCJ7/print-practice
+- 小工具 zip：https://github.com/ZCJ7/print-practice/raw/main/Print.zip
