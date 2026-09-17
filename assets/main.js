@@ -47,7 +47,6 @@
   var holdStart = 0;
   var holding = false;
   var timerClock = 0;
-  var endedByLeave = false;
   var reduceMotion = false;
 
   if (window.matchMedia) {
@@ -447,13 +446,17 @@
     paintMain();
   }
 
+  function startTimerClock() {
+    stopTimerClock();
+    tickTimer();
+    timerClock = window.setInterval(tickTimer, 250);
+  }
+
   function startPractice() {
-    endedByLeave = false;
     state.session = { startAt: Date.now() };
     saveState();
     setMode("practice");
-    tickTimer();
-    timerClock = window.setInterval(tickTimer, 250);
+    startTimerClock();
   }
 
   function tickTimer() {
@@ -632,14 +635,32 @@
   }
 
   function onVisibility() {
-    if (document.hidden && mode === "practice") {
-      endedByLeave = true;
-      finishPractice({ silent: true });
+    if (document.hidden) {
+      if (state.session) saveState();
       return;
     }
-    if (!document.hidden) {
-      applyRecovery(Date.now());
-      paintMain();
+    if (state.session && state.session.startAt) {
+      setMode("practice");
+      startTimerClock();
+      return;
+    }
+    applyRecovery(Date.now());
+    paintMain();
+  }
+
+  function onPageHide(ev) {
+    if (!state.session) return;
+    if (ev && ev.persisted) {
+      saveState();
+      return;
+    }
+    finishPractice({ silent: true });
+  }
+
+  function onPageShow(ev) {
+    if (ev && ev.persisted && state.session && state.session.startAt) {
+      setMode("practice");
+      startTimerClock();
     }
   }
 
@@ -685,28 +706,33 @@
     }, { passive: true });
 
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("pagehide", function () {
-      if (mode === "practice") finishPractice({ silent: true });
-    });
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
     window.addEventListener("resize", function () {
       setAppHeight();
       paintMain();
     });
   }
 
-  function resumeOrphanSession() {
+  function resumeOpenSession() {
     if (state.session && state.session.startAt) {
-      finishPractice({ silent: true });
+      setMode("practice");
+      startTimerClock();
+      return true;
     }
+    return false;
   }
 
   function init() {
     setAppHeight();
-    applyRecovery(Date.now());
-    resumeOrphanSession();
-    saveState();
     bind();
-    setMode("home");
+    if (resumeOpenSession()) {
+      saveState();
+    } else {
+      applyRecovery(Date.now());
+      saveState();
+      setMode("home");
+    }
     window.setInterval(function () {
       if (mode === "home") {
         applyRecovery(Date.now());
